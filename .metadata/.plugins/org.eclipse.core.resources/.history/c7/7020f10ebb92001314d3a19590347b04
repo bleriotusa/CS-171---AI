@@ -18,28 +18,6 @@ public class IAAI extends CKPlayer
 	private int currentDepth;
 	private int depthLimit;
 	
-	// point class that also keeps an integer score
-	private class PointWithScore extends Point implements Comparable
-	{
-		private static final long serialVersionUID = 1L;
-		private int score;
-		public PointWithScore(Point point, int score)
-		{
-			super(point);
-			this.score = score;
-		}
-		public int getScore()
-		{
-			return score;
-		}
-		@Override
-		public int compareTo(Object o) {
-
-			// TODO Auto-generated method stub
-			return 0;
-		}
-	}
-	
 	public IAAI(byte player, BoardModel state) 
 	{
 		super(player, state);
@@ -67,8 +45,19 @@ public class IAAI extends CKPlayer
 		//System.out.println(this.player);
 	}
 	
+	private class PointWithScore extends Point
+	{
+		private int score;
+		public PointWithScore(Point point, int score)
+		{
+			super(point);
+			this.score = score;
+		}
+	}
+	
 	private Point IDS(BoardModel state)
 	{
+		Point best = new Point();
 		moves = generateMoves();
 		int depth = 1;
 		ArrayList<PointWithScore> scores = new ArrayList<PointWithScore>();
@@ -77,18 +66,12 @@ public class IAAI extends CKPlayer
 		{
 			BoardModel copy = state.clone();
 			copy.placePiece(move, player);
-			scores.add(new PointWithScore(move, MinMove(copy, depth)));
+			scores.add(new PointWithScore(move, MinMove(state, depth)));
 			
 		}
 		
 		return null;
 	}
-	
-//	private Point MinMax(BoardModel state)
-//	{
-//		
-//		return MaxMove(state);
-//	}
 	
 	private int MaxMove(BoardModel state, int depthLimit)
 	{

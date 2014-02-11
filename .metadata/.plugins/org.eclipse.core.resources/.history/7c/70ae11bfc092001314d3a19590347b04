@@ -19,7 +19,7 @@ public class IAAI extends CKPlayer
 	private int depthLimit;
 	
 	// point class that also keeps an integer score
-	private class PointWithScore extends Point implements Comparable
+	private class PointWithScore extends Point
 	{
 		private static final long serialVersionUID = 1L;
 		private int score;
@@ -31,12 +31,6 @@ public class IAAI extends CKPlayer
 		public int getScore()
 		{
 			return score;
-		}
-		@Override
-		public int compareTo(Object o) {
-
-			// TODO Auto-generated method stub
-			return 0;
 		}
 	}
 	
@@ -69,6 +63,7 @@ public class IAAI extends CKPlayer
 	
 	private Point IDS(BoardModel state)
 	{
+		Point best = new Point();
 		moves = generateMoves();
 		int depth = 1;
 		ArrayList<PointWithScore> scores = new ArrayList<PointWithScore>();
@@ -82,6 +77,14 @@ public class IAAI extends CKPlayer
 		}
 		
 		return null;
+//		while(depth <= 10)
+//		{
+//			
+////			best = DLS(stateCopy, depth);
+////			moves.remove(best);
+////			moves.add(0, best);
+////			depth++;
+//		}
 	}
 	
 //	private Point MinMax(BoardModel state)
