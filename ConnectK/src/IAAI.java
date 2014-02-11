@@ -34,7 +34,10 @@ public class IAAI extends CKPlayer
 		}
 		@Override
 		public int compareTo(Object o) {
-
+			if(this.score < ((PointWithScore)o).score)
+				return -1;
+			else if(this.score > ((PointWithScore)o).score)
+				return 1;
 			// TODO Auto-generated method stub
 			return 0;
 		}
