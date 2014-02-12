@@ -1,5 +1,6 @@
 import java.awt.Point;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedList;
 
 import connectK.BoardModel;
@@ -81,8 +82,8 @@ public class IAAI extends CKPlayer
 			BoardModel copy = state.clone();
 			copy.placePiece(move, player);
 			scores.add(new PointWithScore(move, MinMove(copy, depth)));
-			
 		}
+		Collections.sort(scores);
 		
 		return null;
 	}
