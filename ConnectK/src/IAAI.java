@@ -1,7 +1,9 @@
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedList;
+import java.util.PriorityQueue;
 
 import connectK.BoardModel;
 import connectK.CKPlayer;
@@ -19,8 +21,10 @@ public class IAAI extends CKPlayer
 	private int currentDepth;
 	private int depthLimit;
 	
+	private PriorityQueue<PointWithScore> listOfMoves;
+	
 	// point class that also keeps an integer score
-	private class PointWithScore extends Point implements Comparable
+	private class PointWithScore extends Point implements Comparable<PointWithScore>
 	{
 		private static final long serialVersionUID = 1L;
 		private int score;
@@ -34,13 +38,20 @@ public class IAAI extends CKPlayer
 			return score;
 		}
 		@Override
-		public int compareTo(Object o) {
-			if(this.score < ((PointWithScore)o).score)
+		public int compareTo(PointWithScore o) {
+			if(this.score < o.score)
 				return -1;
-			else if(this.score > ((PointWithScore)o).score)
+			else if(this.score > o.score)
 				return 1;
 			// TODO Auto-generated method stub
 			return 0;
+		}
+	}
+	
+	private class ReversePriority implements Comparator<PointWithScore>
+	{
+		public int compare(PointWithScore o1, PointWithScore o2){ 
+			return 0 - o1.compareTo(o2);
 		}
 	}
 	
@@ -58,33 +69,38 @@ public class IAAI extends CKPlayer
 		width = state.getWidth();
 		height = state.getHeight();
 		kLength = state.getkLength();
-		this.player = player;
 		
+		// set player values
+		this.player = player;
 		if(player == 1)
 			opponent = 2;
 		else
 			opponent = 1;
 		
+		// initialize priority queue. this queue will keep track of the
+		// moves, and have them sorted with best move first
+		// passes in ReversePriority Comparator to tell PQ how to operate:
+		// 		by reversing the order of natural ordering
+		
+		listOfMoves = new PriorityQueue<PointWithScore>(11, new ReversePriority());
+		
+		
 		// get rid of this when timer is implemented
 		this.depthLimit = 10;
 
-		//System.out.println(this.player);
 	}
 	
 	private Point IDS(BoardModel state)
 	{
 		moves = generateMoves();
-		int depth = 1;
-		ArrayList<PointWithScore> scores = new ArrayList<PointWithScore>();
+		int depth = depthLimit;
 
 		for(Point move: moves)
 		{
 			BoardModel copy = state.clone();
 			copy.placePiece(move, player);
-			scores.add(new PointWithScore(move, MinMove(copy, depth)));
+			listOfMoves.add(new PointWithScore(move, MinMove(copy, depth)));
 		}
-		Collections.sort(scores);
-		
 		return null;
 	}
 	
