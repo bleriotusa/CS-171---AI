@@ -3,6 +3,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedList;
+import java.util.NoSuchElementException;
 import java.util.PriorityQueue;
 
 import connectK.BoardModel;
@@ -77,12 +78,7 @@ public class IAAI extends CKPlayer
 		else
 			opponent = 1;
 		
-		// initialize priority queue. this queue will keep track of the
-		// moves, and have them sorted with best move first
-		// passes in ReversePriority Comparator to tell PQ how to operate:
-		// 		by reversing the order of natural ordering
-		
-		listOfMoves = new PriorityQueue<PointWithScore>(11, new ReversePriority());
+
 		
 		
 		// get rid of this when timer is implemented
@@ -90,19 +86,34 @@ public class IAAI extends CKPlayer
 
 	}
 	
-	private Point IDS(BoardModel state)
+	@Override
+	public Point getMove(BoardModel state)
 	{
+		// generate list of moves in random order for first time
 		moves = generateMoves();
 		int depth = depthLimit;
-
+		currentDepth = 0;
+		
+		// initialize priority queue. this queue will keep track of the
+		// moves, and have them sorted with best move first
+		// passes in ReversePriority Comparator to tell PQ how to operate:
+		// 		by reversing the order of natural ordering
+		
+		listOfMoves = new PriorityQueue<PointWithScore>(11, new ReversePriority());
+		
+		// Do Iterative Deepening Search
+		
+		// first iteration will be in random order
 		for(Point move: moves)
 		{
 			BoardModel copy = state.clone();
 			copy.placePiece(move, player);
-			listOfMoves.add(new PointWithScore(move, MinMove(copy, depth)));
+			listOfMoves.add(new PointWithScore(move, MinMove(copy, depthLimit)));
 		}
+
 		return null;
 	}
+	
 	
 //	private Point MinMax(BoardModel state)
 //	{
@@ -119,8 +130,7 @@ public class IAAI extends CKPlayer
 		// else, try every possible move, until depth limit is up
 		// and save the score for every move
 		// then return largest score
-		ArrayList<Point> moves;
-		moves = generateMoves();
+		ArrayList<Point> moves = generateMoves();
 		ArrayList<Integer> scores = new ArrayList<Integer>();
 
 		for(Point move: moves)
@@ -169,9 +179,9 @@ public class IAAI extends CKPlayer
 		return 0;
 	}
  
-	@Override
-	public Point getMove(BoardModel state) 
-	{
+//	@Override
+//	public Point getMove(BoardModel state) 
+//	{
 //		if(state.gravityEnabled())
 //		{
 //			
@@ -187,11 +197,11 @@ public class IAAI extends CKPlayer
 //		{
 //			
 //		}
-		
-	
-		return null;
-	}
-	
+//		
+//	
+//		return null;
+//	}
+//	
 	@Override
 	public Point getMove(BoardModel state, int deadline)
 	{
