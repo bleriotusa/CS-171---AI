@@ -134,7 +134,7 @@ public class IAAI extends CKPlayer
 		
 		// passes in ReversePriority Comparator to tell PQ how to operate:
 		// by reversing the order of natural ordering
-		PriorityQueue<PointWithScore> movesWithScores = new PriorityQueue<PointWithScore>();
+		PriorityQueue<PointWithScore> movesWithScores = new PriorityQueue<PointWithScore>(11, new ReversePriority());
 		boolean childrenExplored = false;
 
 		// IDEA:
@@ -176,7 +176,7 @@ public class IAAI extends CKPlayer
 				}
 			}
 			// go through the priority list and DFS each node
-			while(!listOfMoves.isEmpty())
+			while(!movesWithScores.isEmpty())
 			{
 				stateCopy = state.clone();
 				stateCopy.placePiece(movesWithScores.remove(), player);
@@ -207,8 +207,8 @@ public class IAAI extends CKPlayer
 		}
 		
 		ArrayList<Point> moves = generateMoves();
-		PriorityQueue<Integer> scores = new PriorityQueue<Integer>(11);
-		PriorityQueue<PointWithScore> movesWithScores = new PriorityQueue<PointWithScore>();
+		PriorityQueue<Integer> scores = new PriorityQueue<Integer>(11, new ReverseIntPriority());
+		PriorityQueue<PointWithScore> movesWithScores = new PriorityQueue<PointWithScore>(11, new ReversePriority());
 		boolean childrenExplored = false;
 
 		if(hMap.containsKey(state.clone().placePiece(moves.get(0), opponent)))
@@ -228,7 +228,7 @@ public class IAAI extends CKPlayer
 				}
 			}
 			// go through the priority list and DFS each node
-			while(!listOfMoves.isEmpty())
+			while(!movesWithScores.isEmpty())
 			{
 				stateCopy = state.clone();
 				stateCopy.placePiece(movesWithScores.remove(), opponent);
