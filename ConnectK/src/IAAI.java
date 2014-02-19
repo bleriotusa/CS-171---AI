@@ -23,7 +23,7 @@ public class IAAI extends CKPlayer
 	private int depthLimit;
 	
 	private PriorityQueue<PointWithScore> listOfMoves;
-	HashMap<BoardModel, Integer> hMap;
+	private HashMap<BoardModel, Integer> hMap;
 	
 	// point class that also keeps an integer score
 	private class PointWithScore extends Point implements Comparable<PointWithScore>
@@ -67,17 +67,23 @@ public class IAAI extends CKPlayer
 	{
 		super(player, state);
 		teamName = "IAAI";
-		// *** UPDATE AFTER EACH PLACEMENT, use lastmove to update other player
-		xHeight = new ArrayList<Integer>(state.width);
+
 		
 		// initialize xHeight
-		for(Integer num: xHeight)
-			num = 0;
+
 		// initialize length, height, klength
 		width = state.getWidth();
 		height = state.getHeight();
 		kLength = state.getkLength();
 		
+		// *** UPDATE AFTER EACH PLACEMENT, use lastmove to update other player
+		xHeight = new ArrayList<Integer>();
+		for(int i = 0; i < width; i++)
+			xHeight.add(0);
+		
+		System.out.println("width is: "+ width);
+		System.out.println("xHeight is: " + xHeight.size());
+
 		// set player values
 		this.player = player;
 		if(player == 1)
@@ -89,24 +95,61 @@ public class IAAI extends CKPlayer
 		hMap = new HashMap<BoardModel, Integer>();
 				
 		// get rid of this when timer is implemented
-		this.depthLimit = 10;
+		this.depthLimit = 3;
 
 	}
 	
 	@Override
 	public Point getMove(BoardModel state)
 	{
+		// update xHeight
+		updateXHeight(state.getLastMove().x);
 		// generate list of moves in random order for first time
-		int depth = depthLimit;
-		
-		for(int currentDepth = 0; currentDepth <= depthLimit; currentDepth++)
-		{
-			;
-		}
-		
-
 		listOfMoves = new PriorityQueue<PointWithScore>(11, new ReversePriority());
-		return null;
+
+		int depth = depthLimit;
+		ArrayList<Point> moves = generateMoves();
+		PriorityQueue<PointWithScore> movesWithScores = new PriorityQueue<PointWithScore>(11, new ReversePriority());
+		
+		// if no tree has been made yet (if hashMap doesn't have a record of child at all)... 
+		// do a blind search
+		if(hMap.get(moves.get(0))== null)	
+		// for each move, place the piece on a copy of the board, then send that new board to Min
+		// this will cause a DFS to happen and return the lowest value given by making this move
+		// then we add all the moves with their corresponding scores to a priority queue that is max first
+			for(Point move: moves)
+			{
+				currentDepth = 0;
+				movesWithScores.add(new PointWithScore(move, MinMove(state.clone().placePiece(move, player), depthLimit)));
+			}
+		
+		// if tree HAS been made, then just check the tree to see which one to start with,
+		// then do the same process as the blind search
+		else
+		{
+			System.out.println("TREE HAS BEEN MADE");
+			for(Point move: moves)
+				listOfMoves.add(new PointWithScore(move, hMap.get(state.clone().placePiece(move,player))));
+			while(!listOfMoves.isEmpty())
+			{
+				System.out.println("POPPING OFF QUEUE");
+				Point move = listOfMoves.remove();
+				currentDepth = 0;
+				movesWithScores.add(new PointWithScore(move, MinMove(state.clone().placePiece(move, player), depthLimit)));
+			}
+		}
+		Point bestMove = movesWithScores.remove();
+		// update xHeight
+		updateXHeight(bestMove.x);
+		// to get the move that results in the state with the highest score, just pop off the first item.
+		return bestMove;
+		
+//		for(int currentDepth = 0; currentDepth <= depthLimit; currentDepth++)
+//		{
+//			;
+//		}
+//		
+
 	}
 	
 //	private Point MinMax(BoardModel state)
@@ -117,8 +160,11 @@ public class IAAI extends CKPlayer
 	
 	private int MaxMove(BoardModel state, int depthLimit)
 	{
+		currentDepth += 1;
+
+		System.out.println("MAXMOVE RAN, CURRENT DEPTH = :" + currentDepth);
 		// check if depthLimit reached. If so, record to hash table and send back eval of state
-		if (currentDepth == depthLimit)
+		if (currentDepth >= depthLimit)
 		{
 			int eval = EvalState(state);
 			hMap.put(state, eval);
@@ -128,7 +174,9 @@ public class IAAI extends CKPlayer
 		// and save the score for every move
 		// then return largest score
 		ArrayList<Point> moves = generateMoves();
-		
+		int bestMoveVal = Integer.MIN_VALUE;
+		BoardModel bestState = null;
+
 		// initialize priority queue. this queue will keep track of the
 		// moves, and have them sorted with best move first;
 		
@@ -136,6 +184,7 @@ public class IAAI extends CKPlayer
 		// by reversing the order of natural ordering
 		PriorityQueue<PointWithScore> movesWithScores = new PriorityQueue<PointWithScore>(11, new ReversePriority());
 		boolean childrenExplored = false;
+		BoardModel stateCopy = null;
 
 		// IDEA:
 		// get a sorted list of children nodes if possible, then expanding them
@@ -152,9 +201,6 @@ public class IAAI extends CKPlayer
 		//	- if NOT in hashMap, then just continue with the depth first search by using
 		//	- the array of moves that has no particular order
 
-		// use this to keep a sorted list of scores
-		PriorityQueue<Integer> scores = new PriorityQueue<Integer>(11, new ReverseIntPriority());
-
 		// check if children are explored
 		if(hMap.containsKey(state.clone().placePiece(moves.get(0), player)))
 			childrenExplored = true;
@@ -164,23 +210,24 @@ public class IAAI extends CKPlayer
 		// values. These values would go into the "move" that gets to the state
 		if(childrenExplored)
 		{
-			BoardModel stateCopy = null;
 			for(Point move: moves)
 			{
 				stateCopy = state.clone();
 				stateCopy.placePiece(move, player);
 			
-				if(hMap.containsKey(stateCopy))
-				{
-					movesWithScores.add(new PointWithScore(move, hMap.get(stateCopy)));
-				}
+				movesWithScores.add(new PointWithScore(move, hMap.get(stateCopy)));
 			}
 			// go through the priority list and DFS each node
 			while(!movesWithScores.isEmpty())
 			{
 				stateCopy = state.clone();
 				stateCopy.placePiece(movesWithScores.remove(), player);
-				scores.add(MinMove(stateCopy, depthLimit));
+				int minMove = MinMove(stateCopy, depthLimit);
+				if(minMove > bestMoveVal)
+				{
+					bestMoveVal = minMove;
+					bestState = stateCopy;
+				}
 			}
 		}
 		// if not in hashMap then just do DFS with no ordering
@@ -188,18 +235,26 @@ public class IAAI extends CKPlayer
 		{
 			for(Point move: moves)
 			{
-				BoardModel stateCopy = state.clone();
+				stateCopy = state.clone();
 				stateCopy.placePiece(move, player);
-				scores.add(MinMove(stateCopy, depthLimit));
+				int minMove = MinMove(stateCopy, depthLimit);
+				if(minMove > bestMoveVal)
+				{
+					bestMoveVal = minMove;
+					bestState = stateCopy;
+				}
 			}
 		}
-		currentDepth += 1;
-		return scores.peek();
+		hMap.put(bestState, bestMoveVal);
+		return bestMoveVal;
 	}
 	
 	private int MinMove(BoardModel state, int depthLimit)
 	{
-		if (currentDepth == depthLimit)
+		currentDepth += 1;
+
+		System.out.println("MINMOVE RAN, CURRENT DEPTH = :" + currentDepth);
+		if (currentDepth >= depthLimit)
 		{
 			int eval = EvalState(state);
 			hMap.put(state, eval);
@@ -209,30 +264,34 @@ public class IAAI extends CKPlayer
 		ArrayList<Point> moves = generateMoves();
 		PriorityQueue<Integer> scores = new PriorityQueue<Integer>(11, new ReverseIntPriority());
 		PriorityQueue<PointWithScore> movesWithScores = new PriorityQueue<PointWithScore>(11, new ReversePriority());
+		int bestMoveVal = Integer.MAX_VALUE;
+		BoardModel bestState = null;
 		boolean childrenExplored = false;
+		BoardModel stateCopy = null;
 
 		if(hMap.containsKey(state.clone().placePiece(moves.get(0), opponent)))
 			childrenExplored = true;
 		
 		if(childrenExplored)
 		{
-			BoardModel stateCopy = null;
 			for(Point move: moves)
 			{
 				stateCopy = state.clone();
 				stateCopy.placePiece(move, opponent);
-			
-				if(hMap.containsKey(stateCopy))
-				{
-					movesWithScores.add(new PointWithScore(move, hMap.get(stateCopy)));
-				}
+
+				movesWithScores.add(new PointWithScore(move, hMap.get(stateCopy)));
 			}
 			// go through the priority list and DFS each node
 			while(!movesWithScores.isEmpty())
 			{
 				stateCopy = state.clone();
 				stateCopy.placePiece(movesWithScores.remove(), opponent);
-				scores.add(MaxMove(stateCopy, depthLimit));
+				int maxMove = MaxMove(stateCopy, depthLimit);
+				if(maxMove < bestMoveVal)
+				{
+					bestMoveVal = maxMove;
+					bestState = stateCopy;
+				}
 			}
 		}
 		// if not in hashMap then just do DFS with no ordering
@@ -240,13 +299,18 @@ public class IAAI extends CKPlayer
 		{
 			for(Point move: moves)
 			{
-				BoardModel stateCopy = state.clone();
+				stateCopy = state.clone();
 				stateCopy.placePiece(move, opponent);
-				scores.add(MaxMove(stateCopy, depthLimit));
+				int maxMove = MaxMove(stateCopy, depthLimit);
+				if(maxMove < bestMoveVal)
+				{
+					bestMoveVal = maxMove;
+					bestState = stateCopy;
+				}
 			}
 		}
-		currentDepth += 1;
-		return scores.peek();
+		hMap.put(bestState, bestMoveVal);
+		return bestMoveVal;
 	}
 	
 	private int EvalState(BoardModel state)
@@ -280,6 +344,8 @@ public class IAAI extends CKPlayer
 	@Override
 	public Point getMove(BoardModel state, int deadline)
 	{
+		System.out.println(depthLimit);
+
 		return getMove(state);
 	}
 	
@@ -294,6 +360,10 @@ public class IAAI extends CKPlayer
 		}
 		
 		return moves;
+	}
+	private void updateXHeight(int x)
+	{
+		xHeight.set(x, xHeight.get(x)+1);
 	}
 	
 	private boolean getMoveGravityOn(BoardModel state)
