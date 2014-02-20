@@ -1,10 +1,8 @@
 import java.awt.Point;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.NoSuchElementException;
-import java.util.PriorityQueue;
 import java.util.HashMap;
+import java.util.PriorityQueue;
 
 import connectK.BoardModel;
 import connectK.CKPlayer;
@@ -13,7 +11,6 @@ public class IAAI extends CKPlayer
 {
 	// shows how many spaces of each column are used
 	private ArrayList<Integer> xHeight;
-	private ArrayList<Point> moves;
 	private int width;
 	private int height;
 	private int kLength;
@@ -54,12 +51,6 @@ public class IAAI extends CKPlayer
 	{
 		public int compare(PointWithScore o1, PointWithScore o2){ 
 			return 0 - o1.compareTo(o2);
-		}
-	}
-	private class ReverseIntPriority implements Comparator<Integer>
-	{
-		public int compare(Integer o1, Integer o2){
-			return o2 - o1;
 		}
 	}
 	
@@ -110,7 +101,6 @@ public class IAAI extends CKPlayer
 		// keep track of which moves to investigate first
 		listOfMoves = null;
 
-		int depth = depthLimit;
 		Point bestMove = null;
 		// keep track of the moves returned so far
 		PriorityQueue<PointWithScore> movesWithScores = null;
@@ -186,7 +176,6 @@ public class IAAI extends CKPlayer
 		// then return largest score
 		ArrayList<Point> moves = generateMoves();
 		int bestMoveVal = Integer.MIN_VALUE;
-		BoardModel bestState = null;
 
 		// initialize priority queue. this queue will keep track of the
 		// moves, and have them sorted with best move first;
@@ -259,9 +248,7 @@ public class IAAI extends CKPlayer
 				stateCopy.placePiece(move, player);
 				int minMove = MinMove(stateCopy, depthLimit);
 				if(minMove > bestMoveVal)
-				{
 					bestMoveVal = minMove;
-				}
 			}
 		}
 		
@@ -286,7 +273,6 @@ public class IAAI extends CKPlayer
 		ArrayList<Point> moves = generateMoves();
 		PriorityQueue<PointWithScore> movesWithScores = new PriorityQueue<PointWithScore>(11);
 		int bestMoveVal = Integer.MAX_VALUE;
-		BoardModel bestState = null;
 		boolean childrenExplored = false;
 		BoardModel stateCopy = null;
 		int localDepth = currentDepth;
@@ -327,9 +313,7 @@ public class IAAI extends CKPlayer
 				stateCopy.placePiece(move, opponent);
 				int maxMove = MaxMove(stateCopy, depthLimit);
 				if(maxMove < bestMoveVal)
-				{
 					bestMoveVal = maxMove;
-				}
 			}
 		}
 		hMap.put(state, bestMoveVal);
@@ -346,8 +330,9 @@ public class IAAI extends CKPlayer
 	public Point getMove(BoardModel state, int deadline)
 	{
 		return getMove(state);
+
 	}
-	
+
 	private ArrayList<Point> generateMoves()
 	{
 		ArrayList<Point> moves = new ArrayList<Point>(width);
@@ -365,11 +350,13 @@ public class IAAI extends CKPlayer
 		xHeight.set(x, xHeight.get(x)+1);
 	}
 	
+	@SuppressWarnings("unused")
 	private boolean getMoveGravityOn(BoardModel state)
 	{
 		return state.gravityEnabled();
 	}
 	
+	@SuppressWarnings("unused")
 	private Point getMoveGravityOff(BoardModel state)
 	{
 		return null;

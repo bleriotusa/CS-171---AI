@@ -1,5 +1,4 @@
-import static org.junit.Assert.*;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.assertTrue;
 
 import java.awt.Point;
 import java.util.Comparator;
