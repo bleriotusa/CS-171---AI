@@ -17,7 +17,7 @@ public class IAAI extends CKPlayer
 	private byte player;
 	private byte opponent;
 	private int currentDepth;
-	private int depthLimit;
+	private static final int DEPTHLIMIT = 3;
 	
 	private PriorityQueue<PointWithScore> listOfMoves;
 	private HashMap<BoardModel, Integer> hMap;
@@ -84,7 +84,7 @@ public class IAAI extends CKPlayer
 		hMap = new HashMap<BoardModel, Integer>();
 				
 		// get rid of this when timer is implemented
-		this.depthLimit = 0;
+//		this.depthLimit = 0;
 
 	}
 	
@@ -106,7 +106,7 @@ public class IAAI extends CKPlayer
 		PriorityQueue<PointWithScore> movesWithScores = null;
 		
 		// start IDS search with a series of Depth Limited Searches
-		for(int currDepth = 0; currDepth <= depthLimit; currDepth++)
+		for(int currDepth = 0; currDepth <= DEPTHLIMIT; currDepth++)
 		{
 			// re-initialize move storages
 			movesWithScores = new PriorityQueue<PointWithScore>(11, new ReversePriority());
@@ -141,17 +141,19 @@ public class IAAI extends CKPlayer
 					movesWithScores.add(new PointWithScore(move, MinMove(state.clone().placePiece(move, player), currDepth)));
 				}
 			}
-			bestMove = movesWithScores.remove();
-			// update xHeight
-			updateXHeight(bestMove.x);
-			// to get the move that results in the state with the highest score, just pop off the first item.
-			System.out.println("VALUE SET: "+hMap.values());
-		}
+
+
+		}		
+		// to get the move that results in the state with the highest score, just pop off the first item.
+		bestMove = movesWithScores.remove();
+		// update xHeight
+		updateXHeight(bestMove.x);
 		
 		// clean up and return
 		listOfMoves = null;
 		moves = null;
 		movesWithScores = null;
+		
 		return bestMove;
 		
 
@@ -166,7 +168,7 @@ public class IAAI extends CKPlayer
 		// check if depthLimit reached. If so, record to hash table and send back eval of state
 		if (currentDepth >= depthLimit)
 		{
-			int eval = EvalState(state);
+			int eval = EvalState(state, player);
 			hMap.put(state, eval);
 			return eval;
 			
@@ -265,7 +267,7 @@ public class IAAI extends CKPlayer
 		System.out.println("MINMOVE RAN, CURRENT DEPTH = :" + currentDepth);
 		if (currentDepth >= depthLimit)
 		{
-			int eval = EvalState(state);
+			int eval = EvalState(state, opponent);
 			hMap.put(state, eval);
 			return eval;
 		}
@@ -320,6 +322,8 @@ public class IAAI extends CKPlayer
 		return bestMoveVal;
 	}
 	
+
+
 	// possible lines with n checker already gets n^2 points
 	// (2 checkers = 4 points, 3 checkers = 9 points, ...)
 	// this is to give more weight to more completed line
