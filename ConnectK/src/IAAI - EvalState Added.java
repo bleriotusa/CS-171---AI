@@ -249,10 +249,10 @@ public class IAAI extends CKPlayer
 		return scores.peek();
 	}
 	
-	// possible lines with n checker already gets n^2 point
+	// possible lines with n checker already gets n^2 points
 	// (2 checkers = 4 points, 3 checkers = 9 points, ...)
 	// this is to give more weight to more completed line
-	// but we will come up with a better
+	// but we will come up with a better formula later
 	private int EvalState(BoardModel state, byte player1)
 	{
 		int scorePlayer1 = 0;
@@ -261,10 +261,7 @@ public class IAAI extends CKPlayer
 		int countP1 = 0;
 		int countP2 = 0;
 		
-		byte player2 = 1;
-		
-		if(player1 == 1)
-			player2 = 2;
+		byte player2 = (byte)((player1 == 1) ? 2 : 1);
 		
 		int l = kLength - 1;
 		
@@ -282,18 +279,20 @@ public class IAAI extends CKPlayer
 						countP1++;
 					
 					else if(state.pieces[i + k][j] == player2)
-			            countP2++;
+						countP2++;
 				}
 				
-				// player1 has checker(s), player 2 doesn't
+				// player1 has checker(s), player2 doesn't -> player1 advantage
 				if((countP1 != 0) && (countP2 == 0))
 					scorePlayer1 += applyWeight(countP1);
 
-				// player2 has checker(s), player 1 doesn't    
+				// player2 has checker(s), player1 doesn't -> player2 advantage 
 				else if((countP2 != 0) && (countP1 == 0))
 					scorePlayer2 += applyWeight(countP2);
 				
-				// otherwise, both player can play the line, thus no advantage to any
+				// otherwise, both player can play the line or
+				// the line has mixture of player1's and player2's checkers
+				// thus, it does not help any player
 				// reset counter
 				countP1 = 0;
 				countP2 = 0;
@@ -311,7 +310,7 @@ public class IAAI extends CKPlayer
 						countP1++;
 					
 					else if(state.pieces[i][j + k] == player2)
-			            countP2++;
+						countP2++;
 				}
 
 				if((countP1 != 0) && (countP2 == 0))
@@ -325,7 +324,7 @@ public class IAAI extends CKPlayer
 			}
 		}
 		
-		// horizontal /
+		// diagonal /
 		for(int i = 0; i < width - l; i++)
 		{	
 			for(int j = 0; j < height - l; j++)
@@ -336,7 +335,7 @@ public class IAAI extends CKPlayer
 						countP1++;
 					
 					else if(state.pieces[i + k][j + k] == player2)
-			            countP2++;
+						countP2++;
 				}
 
 				if((countP1 != 0) && (countP2 == 0))
@@ -350,10 +349,10 @@ public class IAAI extends CKPlayer
 			}
 		}
 		
-		// horizontal \
+		// diagonal \
 		for(int i = l; i < width; i++)
 		{	
-			for(int j = 0; j <= height - l; j++)
+			for(int j = 0; j < height - l; j++)
 			{
 				for(int k = 0; k < kLength; k++)
 				{
@@ -361,7 +360,7 @@ public class IAAI extends CKPlayer
 						countP1++;
 					
 					else if(state.pieces[i - k][j + k] == player2)
-			            countP2++;
+						countP2++;
 				}
 
 				if((countP1 != 0) && (countP2 == 0))
@@ -378,7 +377,7 @@ public class IAAI extends CKPlayer
 		return scorePlayer1 - scorePlayer2;
 	}
 	
-	// work for better formula after we get it working
+	// work for better formula, created for easy edit later
 	private int applyWeight(int n)
 	{
 		return n * n;
