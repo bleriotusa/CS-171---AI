@@ -447,7 +447,12 @@ public class IAAI extends CKPlayer
 
 		return scorePlayer1 - scorePlayer2;
 	}
- 
+	
+	// work for better formula, created for easy edit later
+	private int applyWeight(int n)
+	{
+		return n * n;
+	}
 
 	@Override
 	public Point getMove(BoardModel state, int deadline)
