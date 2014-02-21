@@ -17,7 +17,7 @@ public class IAAI extends CKPlayer
 	private byte player;
 	private byte opponent;
 	private int currentDepth;
-
+	private boolean prune;
 	private static final long TIMELIMIT = 4990000000L;
 
 	private PriorityQueue<PointWithScore> listOfMoves;
@@ -77,6 +77,8 @@ public class IAAI extends CKPlayer
 		this.player = player;
 		this.opponent = (byte)((player == 1) ? 2 : 1);
 
+		prune = true;
+		
 		// initialize HashSet for keeping track of each game node (each state)'s value
 		hMap = new HashMap<BoardModel, Double>();
 
@@ -115,6 +117,9 @@ public class IAAI extends CKPlayer
 			listOfMoves = new PriorityQueue<PointWithScore>(11, new ReversePriority());
 			// reset depth counter
 
+			// update alpha beta
+			double alpha = Double.MIN_VALUE;
+			double beta = Double.MAX_VALUE;
 			// if no tree has been made yet (if hashMap doesn't have a record of child at all)... 
 			// do a blind search
 			if(hMap.get(state.clone().placePiece(moves.get(0), player))== null)	
@@ -124,7 +129,7 @@ public class IAAI extends CKPlayer
 				for(Point move: moves)
 				{
 					currentDepth = 0;
-					movesWithScores.add(new PointWithScore(move, MinMove(state.clone().placePiece(move, player), currDepth, startTime)));
+					movesWithScores.add(new PointWithScore(move, MinMove(state.clone().placePiece(move, player), currDepth, startTime, alpha, beta, prune)));
 				}
 
 			// if tree HAS been made, then just check the tree to see which one to start with,
@@ -140,7 +145,7 @@ public class IAAI extends CKPlayer
 					PointWithScore move = listOfMoves.remove();
 					//System.out.println("ROOT QUEUE VALUE: " + move.getScore());
 					currentDepth = 0;
-					movesWithScores.add(new PointWithScore(move, MinMove(state.clone().placePiece(move, player), currDepth, startTime)));
+					movesWithScores.add(new PointWithScore(move, MinMove(state.clone().placePiece(move, player), currDepth, startTime, alpha, beta, prune)));
 				}
 			}
 
@@ -162,7 +167,7 @@ public class IAAI extends CKPlayer
 		return bestMove;
 	}
 
-	private double MaxMove(BoardModel state, int depthLimit, long startTime)
+	private double MaxMove(BoardModel state, int depthLimit, long startTime, double alpha, double beta, boolean prune)
 	{
 		currentDepth += 1;
 
@@ -235,10 +240,19 @@ public class IAAI extends CKPlayer
 				currentDepth = localDepth;
 				stateCopy = state.clone();
 				stateCopy.placePiece(movesWithScores.remove(), player);
-				double minMove = MinMove(stateCopy, depthLimit, startTime);
+				double minMove = MinMove(stateCopy, depthLimit, startTime, alpha, beta, prune);
+				
 				if(minMove > bestMoveVal)
 				{
 					bestMoveVal = minMove;
+				}
+				
+				if(prune)
+				{
+					alpha = bestMoveVal;
+					
+					if(alpha >= beta)
+						break;
 				}
 			}
 		}
@@ -250,9 +264,20 @@ public class IAAI extends CKPlayer
 				currentDepth = localDepth;
 				stateCopy = state.clone();
 				stateCopy.placePiece(move, player);
-				double minMove = MinMove(stateCopy, depthLimit, startTime);
+				double minMove = MinMove(stateCopy, depthLimit, startTime, alpha, beta, prune);
+				
 				if(minMove > bestMoveVal)
+				{
 					bestMoveVal = minMove;
+				}
+				
+				if(prune)
+				{
+					alpha = bestMoveVal;
+					
+					if(alpha >= beta)
+						break;
+				}
 			}
 		}
 
@@ -262,7 +287,7 @@ public class IAAI extends CKPlayer
 		return bestMoveVal;
 	}
 
-	private double MinMove(BoardModel state, int depthLimit, long startTime)
+	private double MinMove(BoardModel state, int depthLimit, long startTime, double alpha, double beta, boolean prune)
 	{
 		currentDepth += 1;
 
@@ -301,10 +326,19 @@ public class IAAI extends CKPlayer
 				currentDepth = localDepth;
 				stateCopy = state.clone();
 				stateCopy.placePiece(movesWithScores.remove(), opponent);
-				double maxMove = MaxMove(stateCopy, depthLimit, startTime);
+				double maxMove = MaxMove(stateCopy, depthLimit, startTime, alpha, beta, prune);
+				
 				if(maxMove < bestMoveVal)
 				{
 					bestMoveVal = maxMove;
+				}
+				
+				if(prune)
+				{
+					beta = bestMoveVal;
+					
+					if(alpha >= beta)
+						break;
 				}
 			}
 		}
@@ -316,9 +350,18 @@ public class IAAI extends CKPlayer
 				currentDepth = localDepth;
 				stateCopy = state.clone();
 				stateCopy.placePiece(move, opponent);
-				double maxMove = MaxMove(stateCopy, depthLimit, startTime);
+				double maxMove = MaxMove(stateCopy, depthLimit, startTime, alpha, beta, prune);
+				
 				if(maxMove < bestMoveVal)
 					bestMoveVal = maxMove;
+				
+				if(prune)
+				{
+					beta = bestMoveVal;
+					
+					if(alpha >= beta)
+						break;
+				}
 			}
 		}
 		hMap.put(state, bestMoveVal);
@@ -451,7 +494,7 @@ public class IAAI extends CKPlayer
 
 	private double applyWeight(int n)
 	{
-		return n * n * n * n;
+		return n * n * n;
 	}
 
 	@Override
