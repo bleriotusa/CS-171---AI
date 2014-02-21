@@ -17,9 +17,8 @@ public class IAAI extends CKPlayer
 	private byte player;
 	private byte opponent;
 	private int currentDepth;
-	
-	private static final long TIMELIMIT = 4900000000L;
-	private static final int DEPTHLIMIT = 7;
+
+	private static final long TIMELIMIT = 4990000000L;
 
 	private PriorityQueue<PointWithScore> listOfMoves;
 	private HashMap<BoardModel, Double> hMap;
@@ -61,8 +60,6 @@ public class IAAI extends CKPlayer
 		super(player, state);
 		teamName = "IAAI";
 
-
-
 		// initialize length, height, klength
 		width = state.getWidth();
 		height = state.getHeight();
@@ -71,16 +68,14 @@ public class IAAI extends CKPlayer
 		// initialize xHeight
 		// *** UPDATE AFTER EACH PLACEMENT, use lastmove to update other player
 		xHeight = new ArrayList<Integer>();
+		
 		for(int i = 0; i < width; i++)
 			xHeight.add(0);
 
 
 		// set player values
 		this.player = player;
-		if(player == 1)
-			opponent = 2;
-		else
-			opponent = 1;
+		this.opponent = (byte)((player == 1) ? 2 : 1);
 
 		// initialize HashSet for keeping track of each game node (each state)'s value
 		hMap = new HashMap<BoardModel, Double>();
@@ -94,15 +89,7 @@ public class IAAI extends CKPlayer
 	public Point getMove(BoardModel state)
 	{
 		long startTime = System.nanoTime();
-		
-		// hard coded to play the first hand at the optimal place (center)
-		// we should be able to get rid of this as we progress
-		if(state.spacesLeft == (width * height))
-		{
-			Point p = new Point((width - 1) / 2, (height - 1) / 2);
-			return p;
-		}
-		
+
 		//.out.println("GETTING MOVE...");
 		// update xHeight
 		if(state.getLastMove() != null)
@@ -120,7 +107,7 @@ public class IAAI extends CKPlayer
 		// start IDS search with a series of Depth Limited Searches
 		//for(int currDepth = 0; currDepth <= DEPTHLIMIT; currDepth++)
 		int currDepth = 0;
-		
+
 		while(System.nanoTime() - startTime < TIMELIMIT)
 		{
 			// re-initialize move storages
@@ -156,7 +143,7 @@ public class IAAI extends CKPlayer
 					movesWithScores.add(new PointWithScore(move, MinMove(state.clone().placePiece(move, player), currDepth, startTime)));
 				}
 			}
-			
+
 			currDepth++;
 		}		
 		// to get the move that results in the state with the highest score, just pop off the first item.
@@ -169,6 +156,9 @@ public class IAAI extends CKPlayer
 		moves = null;
 		movesWithScores = null;
 
+		System.out.println("Depth reached: " + currDepth);
+		System.out.println("Time: " + (System.nanoTime() - startTime));
+		
 		return bestMove;
 	}
 
@@ -357,10 +347,10 @@ public class IAAI extends CKPlayer
 				// check kLength spaces to the right
 				for(int k = 0; k < kLength; k++)
 				{
-					if(state.pieces[i + k][j] == player1)
+					if(state.pieces[j][i + k] == player1)
 						countP1++;
 
-					else if(state.pieces[i + k][j] == player2)
+					else if(state.pieces[j][i + k] == player2)
 						countP2++;
 				}
 
@@ -388,10 +378,10 @@ public class IAAI extends CKPlayer
 			{
 				for(int k = 0; k < kLength; k++)
 				{
-					if(state.pieces[i][j + k] == player1)
+					if(state.pieces[j + k][i] == player1)
 						countP1++;
 
-					else if(state.pieces[i][j + k] == player2)
+					else if(state.pieces[j + k][i] == player2)
 						countP2++;
 				}
 
@@ -413,10 +403,10 @@ public class IAAI extends CKPlayer
 			{
 				for(int k = 0; k < kLength; k++)
 				{
-					if(state.pieces[i + k][j + k] == player1)
+					if(state.pieces[j + k][i + k] == player1)
 						countP1++;
 
-					else if(state.pieces[i + k][j + k] == player2)
+					else if(state.pieces[j + k][i + k] == player2)
 						countP2++;
 				}
 
@@ -438,10 +428,10 @@ public class IAAI extends CKPlayer
 			{
 				for(int k = 0; k < kLength; k++)
 				{
-					if(state.pieces[i - k][j + k] == player1)
+					if(state.pieces[j + k][i - k] == player1)
 						countP1++;
 
-					else if(state.pieces[i - k][j + k] == player2)
+					else if(state.pieces[j + k][i - k] == player2)
 						countP2++;
 				}
 
