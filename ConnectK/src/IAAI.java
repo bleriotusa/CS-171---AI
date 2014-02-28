@@ -18,7 +18,7 @@ public class IAAI extends CKPlayer
 	private byte opponent;
 	private int currentDepth;
 	private boolean prune;
-	private static final long TIMELIMIT = 500000000L; // original = 4990000000L
+	private static final long TIMELIMIT = 4790000000L; // original = 4990000000L
 
 	private PriorityQueue<PointWithScore> listOfMoves;
 	private HashMap<BoardModel, Double> hMap;
@@ -79,8 +79,7 @@ public class IAAI extends CKPlayer
 
 		prune = true;
 		
-		// initialize HashSet for keeping track of each game node (each state)'s value
-		hMap = new HashMap<BoardModel, Double>();
+
 
 		// get rid of this when timer is implemented
 //		this.depthLimit = 0;
@@ -91,7 +90,9 @@ public class IAAI extends CKPlayer
 	public Point getMove(BoardModel state)
 	{
 		long startTime = System.nanoTime();
-
+		
+		// initialize HashSet for keeping track of each game node (each state)'s value
+		hMap = new HashMap<BoardModel, Double>();
 		System.out.println("GETTING MOVE...");
 		// update xHeight
 		if(state.getLastMove() != null)
@@ -171,7 +172,7 @@ public class IAAI extends CKPlayer
 	{
 		currentDepth += 1;
 
-		System.out.println("MAXMOVE RAN, CURRENT DEPTH = :" + currentDepth);
+//		System.out.println("MAXMOVE RAN, CURRENT DEPTH = :" + currentDepth);
 		// check if depthLimit reached. If so, record to hash table and send back eval of state
 		//if (currentDepth >= depthLimit)
 		if(System.nanoTime() - startTime > TIMELIMIT || currentDepth >= depthLimit)
@@ -234,13 +235,13 @@ public class IAAI extends CKPlayer
 			// 3. send state through MinMove function
 			// 4. get returned value and associate it with the move
 			// 5. put PointWithScore into PQ so that highest value comes out first
-			System.out.println("POPPING OFF QUEUE: MAX");
+//			System.out.println("POPPING OFF QUEUE: MAX");
 			while(!movesWithScores.isEmpty())
 			{
 				currentDepth = localDepth;
 				stateCopy = state.clone();
 				PointWithScore move = movesWithScores.remove();
-				System.out.println("ROOT QUEUE VALUE: " + move.getScore());
+//				System.out.println("ROOT QUEUE VALUE: " + move.getScore());
 				stateCopy.placePiece(move, player);
 				double minMove = MinMove(stateCopy, depthLimit, startTime, alpha, beta, prune);
 				
@@ -478,6 +479,8 @@ public class IAAI extends CKPlayer
 
 	private double applyWeight(int n)
 	{
+		if(n == kLength)
+			return Double.MAX_VALUE;
 		return n * n * n;
 	}
 
