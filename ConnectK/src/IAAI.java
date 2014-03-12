@@ -22,6 +22,7 @@ public class IAAI extends CKPlayer
 
 	private PriorityQueue<PointWithScore> listOfMoves;
 	private HashMap<BoardModel, Double> hMap;
+	private boolean gravity;
 
 	// point class that also keeps an integer score
 	private class PointWithScore extends Point implements Comparable<PointWithScore>
@@ -75,7 +76,9 @@ public class IAAI extends CKPlayer
 
 		// set player values
 		this.player = player;
-		this.opponent = (byte)((player == 1) ? 2 : 1);		
+		this.opponent = (byte)((player == 1) ? 2 : 1);
+		
+		gravity = state.gravityEnabled();
 	}
 	boolean found = false;
 
@@ -96,10 +99,10 @@ public class IAAI extends CKPlayer
 			updateXHeight(state.getLastMove().x);
 		
 		// generate list of moves in random order for first time
-		ArrayList<Point> moves = generateMoves();
+		ArrayList<Point> moves = generateMoves(state);
 
 		// keep track of the best move so far
-		PointWithScore bestMove = new PointWithScore(new Point(), Double.MIN_VALUE);
+		PointWithScore bestMove = new PointWithScore(new Point(), Double.NEGATIVE_INFINITY);
 
 
 		// start IDS search with a series of Depth Limited Searches
@@ -147,7 +150,7 @@ public class IAAI extends CKPlayer
 				}
 			}
 			// if for the next immediate move, you will win, take that spot
-			if(bestMove.getScore() == Double.MAX_VALUE*2 && currDepth == 1)
+			if(bestMove.getScore() >= Double.MAX_VALUE && currDepth == 1)
 			{
 				System.out.println("currDepth == 1");
 				found = true;
@@ -183,7 +186,7 @@ public class IAAI extends CKPlayer
 		// else, try every possible move, until depth limit is up
 		// and save the score for every move
 		// then return largest score
-		ArrayList<Point> moves = generateMoves();
+		ArrayList<Point> moves = generateMoves(state);
 		double bestMoveVal = -Double.MAX_VALUE;
 
 		// initialize priority queue. this queue will keep track of the
@@ -293,7 +296,7 @@ public class IAAI extends CKPlayer
 			return eval;
 		}
 
-		ArrayList<Point> moves = generateMoves();
+		ArrayList<Point> moves = generateMoves(state);
 		double bestMoveVal = Double.MAX_VALUE;
 		PriorityQueue<PointWithScore> movesWithScores = new PriorityQueue<PointWithScore>(11, new ReversePriority());
 
@@ -481,7 +484,7 @@ public class IAAI extends CKPlayer
 	private double applyWeight(int n)
 	{
 		if(n == kLength)
-			return Double.MAX_VALUE*3;
+			return Double.MAX_VALUE;
 		return n * n * n;
 	}
 
@@ -491,16 +494,31 @@ public class IAAI extends CKPlayer
 		return getMove(state);
 	}
 
-	private ArrayList<Point> generateMoves()
+	private ArrayList<Point> generateMoves(BoardModel state)
 	{
-		ArrayList<Point> moves = new ArrayList<Point>(width);
-
-		for(int i = 0; i < width; i++)
+		ArrayList<Point> moves = null;
+		if(gravity)
 		{
-			if(xHeight.get(i) < height)
-				moves.add(new Point(i, xHeight.get(i)));
+			moves = new ArrayList<Point>(width);
+			
+			for(int i = 0; i < width; i++)
+			{
+				if(xHeight.get(i) < height)
+					moves.add(new Point(i, xHeight.get(i)));
+			}
 		}
-
+		else
+		{
+			moves = new ArrayList<Point>();
+			for(int i = 0; i < width; i++)
+			{
+				for(int j = 0; j< height; j++)
+				{
+					if(state.getSpace(i, j) == 0)
+						moves.add(new Point(i, j));
+				}
+			}
+		}
 		return moves;
 	}
 	private void updateXHeight(int x)
