@@ -17,7 +17,7 @@ public class IAAI extends CKPlayer
 	private byte player;
 	private byte opponent;
 	private int currentDepth;
-	private boolean prune;
+	private static final boolean PRUNE = true;
 	private static final long TIMELIMIT = 4790000000L; // original = 4990000000L
 
 	private PriorityQueue<PointWithScore> listOfMoves;
@@ -36,10 +36,6 @@ public class IAAI extends CKPlayer
 		public double getScore()
 		{
 			return score;
-		}
-		public void setScore(double newScore)
-		{
-			score = newScore;
 		}
 		@Override
 		public int compareTo(PointWithScore o) {
@@ -79,15 +75,7 @@ public class IAAI extends CKPlayer
 
 		// set player values
 		this.player = player;
-		this.opponent = (byte)((player == 1) ? 2 : 1);
-
-		prune = true;
-		
-
-
-		// get rid of this when timer is implemented
-//		this.depthLimit = 0;
-
+		this.opponent = (byte)((player == 1) ? 2 : 1);		
 	}
 	boolean found = false;
 
@@ -96,17 +84,19 @@ public class IAAI extends CKPlayer
 	{
 		long startTime = System.nanoTime();
 		
-		// initialize HashSet for keeping track of each game node (each state)'s value
+		// initialize HashSet for keeping track of each explored game node (each state)'s value
+		// a state's value is defined as: 
+		// 1. if leaf node, eval(node)
+		// 2. if internal , max or min of children nodes
 		hMap = new HashMap<BoardModel, Double>();
 		System.out.println("GETTING MOVE...");
+		
 		// update xHeight
 		if(state.getLastMove() != null)
 			updateXHeight(state.getLastMove().x);
+		
 		// generate list of moves in random order for first time
 		ArrayList<Point> moves = generateMoves();
-
-		// keep track of which moves to investigate first
-		listOfMoves = null;
 
 		// keep track of the best move so far
 		PointWithScore bestMove = new PointWithScore(new Point(), Double.MIN_VALUE);
@@ -114,10 +104,9 @@ public class IAAI extends CKPlayer
 
 		// start IDS search with a series of Depth Limited Searches
 		//for(int currDepth = 0; currDepth <= DEPTHLIMIT; currDepth++)
-		int currDepth = 0;
-		while(System.nanoTime() - startTime < TIMELIMIT && !found)
+		for(int currDepth = 0; System.nanoTime() - startTime < TIMELIMIT && !found; currDepth++)
 		{
-			// re-initialize move storages
+			// initialize move storage
 			listOfMoves = new PriorityQueue<PointWithScore>(11, new ReversePriority());
 			// reset depth counter
 
@@ -129,14 +118,13 @@ public class IAAI extends CKPlayer
 			if(hMap.get(state.clone().placePiece(moves.get(0), player))== null)	
 			// for each move, place the piece on a copy of the board, then send that new board to Min
 			// this will cause a DFS to happen and return the lowest value given by making this move
-			// then we add all the moves with their corresponding scores to a priority queue that is max first
+			// then we save the move that results in the best score
 				for(Point move: moves)
 				{
 					currentDepth = 0;
-					double min = MinMove(state.clone().placePiece(move, player), currDepth, startTime, alpha, beta, prune);
-					if(min > bestMove.getScore())
+					double min = MinMove(state.clone().placePiece(move, player), currDepth, startTime, alpha, beta);
+					if(min >= bestMove.getScore())
 						bestMove = new PointWithScore(move, min);
-//					movesWithScores.add(new PointWithScore(move, MinMove(state.clone().placePiece(move, player), currDepth, startTime, alpha, beta, prune)));
 				}
 
 			// if tree HAS been made, then just check the tree to see which one to start with,
@@ -152,13 +140,14 @@ public class IAAI extends CKPlayer
 					PointWithScore move = listOfMoves.remove();
 //					System.out.println("ROOT QUEUE VALUE: " + move.getScore());
 					currentDepth = 0;
-					double min = MinMove(state.clone().placePiece(move, player), currDepth, startTime, alpha, beta, prune);
-					if(min > bestMove.getScore())
+					double min = MinMove(state.clone().placePiece(move, player), currDepth, startTime, alpha, beta);
+					if(min >= bestMove.getScore())
 						bestMove = new PointWithScore(move, min);
-//					movesWithScores.add(new PointWithScore(move, MinMove(state.clone().placePiece(move, player), currDepth, startTime, alpha, beta, prune)));
+//					movesWithScores.add(new PointWithScore(move, MinMove(state.clone().placePiece(move, player), currDepth, startTime, alpha, beta, PRUNE)));
 				}
 			}
-			if(bestMove.getScore() == Double.MAX_VALUE && currDepth == 1)
+			// if for the next immediate move, you will win, take that spot
+			if(bestMove.getScore() == Double.MAX_VALUE*2 && currDepth == 1)
 			{
 				System.out.println("currDepth == 1");
 				found = true;
@@ -173,22 +162,19 @@ public class IAAI extends CKPlayer
 
 		// clean up and return
 		listOfMoves = null;
-		moves = null;
-
-		System.out.println("Depth reached: " + currDepth);
-		
+		moves = null;		
 		
 		return bestMove;
 	}
 
-	private double MaxMove(BoardModel state, int depthLimit, long startTime, double alpha, double beta, boolean prune)
+	private double MaxMove(BoardModel state, int depthLimit, long startTime, double alpha, double beta)
 	{
 		currentDepth += 1;
 
 //		System.out.println("MAXMOVE RAN, CURRENT DEPTH = :" + currentDepth);
 		// check if depthLimit reached. If so, record to hash table and send back eval of state
 		//if (currentDepth >= depthLimit)
-		if(System.nanoTime() - startTime > TIMELIMIT || currentDepth >= depthLimit)
+		if(System.nanoTime() - startTime > TIMELIMIT || currentDepth >= depthLimit || state.winner() != -1)
 		{
 			double eval = EvalState(state, player);
 			hMap.put(state, eval);
@@ -256,13 +242,13 @@ public class IAAI extends CKPlayer
 				PointWithScore move = movesWithScores.remove();
 //				System.out.println("ROOT QUEUE VALUE: " + move.getScore());
 				stateCopy.placePiece(move, player);
-				double minMove = MinMove(stateCopy, depthLimit, startTime, alpha, beta, prune);
+				double minMove = MinMove(stateCopy, depthLimit, startTime, alpha, beta);
 				
 				if(minMove > bestMoveVal)
 				{
 					bestMoveVal = minMove;
 					alpha = bestMoveVal;
-					if(prune && (alpha >= beta))
+					if(PRUNE && (alpha >= beta))
 						break;
 				}
 			}
@@ -276,13 +262,13 @@ public class IAAI extends CKPlayer
 				currentDepth = localDepth;
 				stateCopy = state.clone();
 				stateCopy.placePiece(move, player);
-				double minMove = MinMove(stateCopy, depthLimit, startTime, alpha, beta, prune);
+				double minMove = MinMove(stateCopy, depthLimit, startTime, alpha, beta);
 				
 				if(minMove > bestMoveVal)
 				{
 					bestMoveVal = minMove;
 					alpha = bestMoveVal;
-					if(prune && (alpha >= beta))
+					if(PRUNE && (alpha >= beta))
 						break;
 				}
 			}
@@ -294,22 +280,23 @@ public class IAAI extends CKPlayer
 		return bestMoveVal;
 	}
 
-	private double MinMove(BoardModel state, int depthLimit, long startTime, double alpha, double beta, boolean prune)
+	private double MinMove(BoardModel state, int depthLimit, long startTime, double alpha, double beta)
 	{
 		currentDepth += 1;
-/*
+
 		//System.out.println("MINMOVE RAN, CURRENT DEPTH = :" + currentDepth);
 		//if (currentDepth >= depthLimit)
-		if(System.nanoTime() - startTime > TIMELIMIT || currentDepth >= depthLimit)
+		if(System.nanoTime() - startTime > TIMELIMIT || currentDepth >= depthLimit || state.winner() != -1) 
 		{
-			double eval = EvalState(state, opponent);
+			double eval = EvalState(state, player);
 			hMap.put(state, eval);
 			return eval;
 		}
-*/
+
 		ArrayList<Point> moves = generateMoves();
-		PriorityQueue<PointWithScore> movesWithScores = new PriorityQueue<PointWithScore>(11);
 		double bestMoveVal = Double.MAX_VALUE;
+		PriorityQueue<PointWithScore> movesWithScores = new PriorityQueue<PointWithScore>(11, new ReversePriority());
+
 		boolean childrenExplored = false;
 		BoardModel stateCopy = null;
 		int localDepth = currentDepth;
@@ -333,13 +320,13 @@ public class IAAI extends CKPlayer
 				currentDepth = localDepth;
 				stateCopy = state.clone();
 				stateCopy.placePiece(movesWithScores.remove(), opponent);
-				double maxMove = MaxMove(stateCopy, depthLimit, startTime, alpha, beta, prune);
+				double maxMove = MaxMove(stateCopy, depthLimit, startTime, alpha, beta);
 				
 				if(maxMove < bestMoveVal)
 				{
 					bestMoveVal = maxMove;
 					beta = bestMoveVal;
-					if(prune && (alpha >= beta))
+					if(PRUNE && (alpha >= beta))
 						break;
 				}
 			}
@@ -352,13 +339,13 @@ public class IAAI extends CKPlayer
 				currentDepth = localDepth;
 				stateCopy = state.clone();
 				stateCopy.placePiece(move, opponent);
-				double maxMove = MaxMove(stateCopy, depthLimit, startTime, alpha, beta, prune);
+				double maxMove = MaxMove(stateCopy, depthLimit, startTime, alpha, beta);
 				
 				if(maxMove < bestMoveVal)
 				{
 					bestMoveVal = maxMove;
 					beta = bestMoveVal;
-					if(prune && (alpha >= beta))
+					if(PRUNE && (alpha >= beta))
 						break;
 				}
 			}
@@ -494,7 +481,7 @@ public class IAAI extends CKPlayer
 	private double applyWeight(int n)
 	{
 		if(n == kLength)
-			return Double.MAX_VALUE;
+			return Double.MAX_VALUE*3;
 		return n * n * n;
 	}
 
